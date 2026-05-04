@@ -63,7 +63,23 @@ async def rag_ingest_pdf(ctx: inngest.Context):
 
 
 @inngest_client.create_function(
-    fn_id="RAG: Query PDF", trigger=inngest.TriggerEvent(event="rag/query_pdf_ai")
+    fn_id="RAG: Query PDF",
+    trigger=inngest.TriggerEvent(event="rag/query_pdf_ai"),
+    concurrency=[
+        inngest.Concurrency(
+            limit=10,
+        )
+    ],
+    throttle=inngest.Throttle(
+        limit=2,
+        period=datetime.timedelta(minutes=1),
+        key="event.data.source_id",
+    ),
+    rate_limit=inngest.RateLimit(
+        limit=1,
+        period=datetime.timedelta(hours=4),
+        key="event.data.source_id",
+    ),
 )
 async def rag_query_pdf_ai(ctx: inngest.Context) -> RAGSearchResult:
     def _search(question: str, top_k: int = 5):
